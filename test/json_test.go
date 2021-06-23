@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"testing"
 )
 
@@ -25,4 +26,9 @@ func Test01(t *testing.T) {
 	}
 	fmt.Println(matchString)
 
+}
+
+func Test02(t *testing.T) {
+	v, _ := strconv.ParseInt("21", 10, 32)
+	fmt.Println(v)
 }

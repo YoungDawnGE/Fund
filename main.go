@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"gyc.com/Fund/cmd"
-	"regexp"
+	"strconv"
 )
 
 func main() {
@@ -19,10 +19,10 @@ func main() {
 		})
 	})
 
+	//获得某fund数据(在已经下载的情况下)
 	r.GET("/fund/data/:code", func(c *gin.Context) {
 		code := c.Param("code")
-		isCode, _ := regexp.MatchString("\\b\\d{6}\\b", code)
-		if !isCode {
+		if !cmd.IsCode(code) {
 			c.JSON(405, gin.H{
 				"code": 405,
 				"msg":  "输入的code有误",
@@ -36,10 +36,10 @@ func main() {
 		})
 	})
 
+	//获取最新的某fund数据
 	r.GET("/fund/update/:code", func(c *gin.Context) {
 		code := c.Param("code")
-		isCode, _ := regexp.MatchString("\\b\\d{6}\\b", code)
-		if !isCode {
+		if !cmd.IsCode(code) {
 			c.JSON(405, gin.H{
 				"code": 405,
 				"msg":  "输入的code有误",
@@ -51,6 +51,48 @@ func main() {
 		_, data := cmd.JsonToDataArray(code)
 		c.JSON(200, gin.H{
 			"code": 200,
+			"data": data,
+		})
+	})
+
+	//获取的某fund涨跌数据（间隔1天）
+	r.GET("/fund/rate/:code", func(c *gin.Context) {
+		code := c.Param("code")
+		if !cmd.IsCode(code) {
+			c.JSON(405, gin.H{
+				"code": 405,
+				"msg":  "输入的code有误",
+			})
+			return
+		}
+		cmd.DownLoadFundTxt(code)
+		cmd.GenFundJson(code)
+		_, data := cmd.JsonToRateArray(code)
+		c.JSON(200, gin.H{
+			"code": 200,
+			//"date": date,
+			"data": data,
+		})
+	})
+
+	//获取的某fund涨跌数据（间隔n天）
+	r.GET("/fund/rate/:code/:day", func(c *gin.Context) {
+		code := c.Param("code")
+		if !cmd.IsCode(code) {
+			c.JSON(405, gin.H{
+				"code": 405,
+				"msg":  "输入的code有误",
+			})
+			return
+		}
+		day, _ := strconv.ParseInt(c.Param("day"), 10, 32)
+
+		cmd.DownLoadFundTxt(code)
+		cmd.GenFundJson(code)
+		_, data := cmd.JsonToRateArrayNDay(code, int(day))
+		c.JSON(200, gin.H{
+			"code": 200,
+			//"date": date,
 			"data": data,
 		})
 	})

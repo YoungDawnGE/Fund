@@ -8,13 +8,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
 //"http://fund.10jqka.com.cn/001410/json/jsondwjz.json"
-//下载fund的数据
+//下载fund的数据为txt格式
 func DownLoadFundTxt(code string) {
 	//常量定义
 	uri := "http://fund.10jqka.com.cn/" + code + "/json/jsondwjz.json"
@@ -49,7 +50,7 @@ func DownLoadFundTxt(code string) {
 	log.Println("download", code, "ok :", c, "chars")
 }
 
-//将fund数据转化为.json格式
+//将下载好的fund.txt数据转化为.json格式
 func GenFundJson(code string) {
 	//变量名
 	destFilename := "./json_data/" + code + ".json"
@@ -85,7 +86,7 @@ func GenFundJson(code string) {
 	log.Println("write to file json " + destFilename + " success")
 }
 
-//读取文件 转化为日期数组和value数组
+//读取文件 把json文件转化为日期数组和value数组
 func JsonToDataArray(code string) ([]string, []float64) {
 	sourceFilename := "./json_data/" + code + ".json"
 	file, err := os.Open(sourceFilename)
@@ -112,4 +113,36 @@ func JsonToDataArray(code string) ([]string, []float64) {
 	}
 	log.Println("Generate date&data array success")
 	return date, dataValue
+}
+
+//计算第N天第涨幅，今日涨幅=(今日净值-昨日净值)/昨日净值
+func JsonToRateArray(code string) ([]string, []float64) {
+	date, data := JsonToDataArray(code)
+	rate := make([]float64, len(data))
+	rate[0] = 0 //第一台你的
+
+	for i := 1; i < len(data); i++ {
+		rate[i] = (data[i] - data[i-1]) / data[i-1]
+	}
+	return date, rate
+}
+
+//计算N天的涨幅
+func JsonToRateArrayNDay(code string, n int) ([]string, []float64) {
+	date, data := JsonToDataArray(code)
+	rate := make([]float64, len(data))
+	for i := 0; i < n; i++ {
+		rate[i] = 0
+	}
+
+	for i := n; i < len(data); i++ {
+		rate[i] = (data[i] - data[i-n]) / data[i-n]
+	}
+	return date, rate
+}
+
+//判断是不是fund的码
+func IsCode(code string) bool {
+	isCode, _ := regexp.MatchString("\\b\\d{6}\\b", code)
+	return isCode
 }
